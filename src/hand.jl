@@ -1,4 +1,4 @@
-function stepper1d!(out::AbstractVector, c, u, alg)
+function hand_tuned_step!(out::AbstractVector, c, u, alg)
     i1 = first(eachindex(c))
     iN = last(eachindex(c))
     pm = alg.variant
@@ -23,7 +23,7 @@ function stepper1d!(out::AbstractVector, c, u, alg)
         ∇c = c₊ - c₀
         Δu = u₊ - 2u₀ + u₋
         dudt = c₀ * Δu + ∇c * ∇u
-        out[i] = out[i] + alg.lambda * dudt
+        out[i] = u[i] + alg.lambda * dudt
     end
     pmstencil = PMStencil(alg.lambda)
     mapstencil_border!(pmstencil, out, u, c, pad=get_pad(u, alg))

@@ -5,7 +5,7 @@ export PeronaMalik, PM1, PM2, denoise
     variant::PM = PM2(10),
     border::Symbol = :replicate,
     niter::Int=100,
-    stepper!::S=generic_step!,
+    step::S=generic_step!,
     )
 
 function generic_step!(out, c, img, alg::PeronaMalik)
@@ -57,7 +57,7 @@ function denoise(img, alg::PeronaMalik=PeronaMalik())
     c_buf = similar(img, T)
     copy!(img_buf, img)
     for i in 1:alg.niter
-        alg.stepper!(out_buf, c_buf, img_buf, alg)
+        alg.step(out_buf, c_buf, img_buf, alg)
         out_buf, img_buf = img_buf, out_buf
     end
     img_buf
