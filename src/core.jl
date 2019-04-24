@@ -30,7 +30,7 @@ function mapstencil_border!(stencil, out, arrs...; pad)
         r[2:end-1]
     end
     padded_arrs = map(arrs) do arr
-        padarray(arr, pad)
+        LazyPadArray(arr, pad)
     end
     for i in EdgeIterator(outeraxes, inneraxes)
         out[i] = stencil(padded_arrs..., i)
@@ -188,4 +188,3 @@ end
     @inbounds dudt = (dot_grad(c, img, index) + c[index] * laplace(img, index))
     @inbounds img[index] + f.lambda * dudt
 end
-
