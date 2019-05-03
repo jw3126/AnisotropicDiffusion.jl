@@ -16,10 +16,10 @@ using Test
     @test sum(abs2, img - img_clean) < sum(abs2, img - img_baseline)
 end
 
-@testset "generic vs hand tuned" begin
+@testset "generic vs hand tuned $(dim)d" for dim in [1,2]
     alg1 = PeronaMalik(step = generic_step!, niter=1)
     alg2 = PeronaMalik(step = hand_tuned_step!, niter=1)
-    img = randn(10)
+    img = randn([10,10,10][1:dim]...)
     ret1 = denoise(img, alg1)
     ret2 = denoise(img, alg2)
     @test ret1 ≈ ret2
