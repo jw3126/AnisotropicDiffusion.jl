@@ -1,6 +1,11 @@
-function hand_tuned_step!(out::AbstractVector, c, u, alg)
+function hand_tuned_step!(out::AbstractArray,
+                          bc::BorderArray,
+                          bu::BorderArray,
+                          alg)
+    c = bc.inner
+    u = bu.inner
     i1 = first(eachindex(c))
-    iN = last(eachindex(c))
+    iN = last( eachindex(c))
     pm = alg.variant
     innerinds = (i1+1):(iN-1)
 
@@ -10,7 +15,7 @@ function hand_tuned_step!(out::AbstractVector, c, u, alg)
         c[i] = c_from_grad2(pm, K, ∇u2)
     end
     cstencil = CStencil(pm)
-    mapstencil_border!(cstencil, c, u, pad=get_pad(u, alg))
+    mapstencil_border!(cstencil, c, bu)
 
     @inbounds @simd for i in innerinds
         u₀ = u[i]
@@ -26,6 +31,6 @@ function hand_tuned_step!(out::AbstractVector, c, u, alg)
         out[i] = u[i] + alg.lambda * dudt
     end
     pmstencil = PMStencil(alg.lambda)
-    mapstencil_border!(pmstencil, out, u, c, pad=get_pad(u, alg))
+    mapstencil_border!(pmstencil, out, bu, bc)
     out
 end

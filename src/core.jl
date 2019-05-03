@@ -1,5 +1,7 @@
 export PeronaMalik, PM1, PM2, denoise
 
+using ImageFiltering
+
 @qstruct PeronaMalik{PM,S}(;
     lambda::Float64=0.1,
     variant::PM = PM2(10),
@@ -8,42 +10,42 @@ export PeronaMalik, PM1, PM2, denoise
     step::S=generic_step!,
     )
 
-function generic_step!(out, c, img, alg::PeronaMalik)
-    pad = get_pad(img, alg)
+function generic_step!(out::AbstractArray,
+                       bc::BorderArray,
+                       bimg::BorderArray,
+                       alg::PeronaMalik)
     cstencil = CStencil(alg.variant)
     pmstencil = PMStencil(alg.lambda)
-    mapstencil!(cstencil , c  , img,    pad=pad)
-    mapstencil!(pmstencil, out, img, c, pad=pad)
+    mapstencil!(cstencil ,  bc.inner  , bimg,   )
+    mapstencil!(pmstencil, out, bimg, bc)
     out
 end
 
-function mapstencil_inner!(stencil, out, arrs...; axes)
+function mapstencil_inner!(stencil, out, barrs...; axes)
+    arrs = map(barr -> barr.inner, barrs)
     @simd for i in CartesianIndices(axes)
         @inbounds out[i] = stencil(arrs..., i)
     end
     out
 end
 
-function mapstencil_border!(stencil, out, arrs...; pad)
+function mapstencil_border!(stencil, out, barrs...)
     outeraxes = axes(out)
     inneraxes = map(outeraxes) do r
         r[2:end-1]
     end
-    padded_arrs = map(arrs) do arr
-        LazyPadArray(arr, pad)
-    end
     for i in EdgeIterator(outeraxes, inneraxes)
-        out[i] = stencil(padded_arrs..., i)
+        out[i] = stencil(barrs..., i)
     end
     out
 end
 
-function mapstencil!(stencil::F, out, arrs...; pad) where {F}
+function mapstencil!(stencil::F, out, barrs...) where {F}
     inneraxes = map(axes(out)) do r
         r[2:end-1]
     end
-    mapstencil_inner!(stencil, out, arrs..., axes=inneraxes)
-    mapstencil_border!(stencil, out, arrs..., pad=pad)
+    mapstencil_inner!(stencil, out, barrs..., axes=inneraxes)
+    mapstencil_border!(stencil, out, barrs...)
 end
 
 function denoise(img, alg::PeronaMalik=PeronaMalik())
@@ -52,18 +54,19 @@ function denoise(img, alg::PeronaMalik=PeronaMalik())
     end
     x = first(img)
     T = typeof(exp((x - x)^2 / 2))
-    out_buf = similar(img, T)
-    img_buf = similar(img, T)
-    c_buf = similar(img, T)
-    copy!(img_buf, img)
+    border = get_border(img, alg)
+    out_buf = BorderArray(similar(img, T), border)
+    img_buf = BorderArray(similar(img, T), border)
+    c_buf   = BorderArray(similar(img, T), border)
+    copy!(img_buf.inner, img)
     for i in 1:alg.niter
-        alg.step(out_buf, c_buf, img_buf, alg)
+        alg.step(out_buf.inner, c_buf, img_buf, alg)
         out_buf, img_buf = img_buf, out_buf
     end
-    img_buf
+    img_buf.inner
 end
 
-function get_pad(img::AbstractArray{T,N}, alg::PeronaMalik) where {T, N}
+function get_border(img::AbstractArray{T,N}, alg::PeronaMalik) where {T, N}
     dims = ntuple(_ -> 1, Val(N))
     Pad{N}(alg.border, dims, dims)
 end
