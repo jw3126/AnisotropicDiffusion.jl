@@ -85,12 +85,12 @@ end
 
 const PM{K} = Union{PM1{K}, PM2{K}}
 
-@inline function get_K(pm::PM{<:Number}, index)
+@inline function get_K(pm::PM{<:Number}, index...)
     pm.k
 end
 
-@inline function get_K(pm::PM{<:AbstractArray}, index)
-    @inbounds pm.k[index]
+@inline function get_K(pm::PM{<:AbstractArray}, index...)
+    @inbounds pm.k[index...]
 end
 
 @inline function c_from_grad2(pm::PM1, K, ∇img2)

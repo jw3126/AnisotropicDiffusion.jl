@@ -53,7 +53,7 @@ function hand_tuned_step!(out::AbstractMatrix,
     @inbounds @simd for j in jinnerinds
         for i in iinnerinds
             ∇u2 = (u[i+1,j] - u[i,j])^2 + (u[i,j+1] - u[i,j])^2
-            K = get_K(pm, i)
+            K = get_K(pm, i,j)
             c[i,j] = c_from_grad2(pm, K, ∇u2)
         end
     end
